@@ -1,7 +1,5 @@
-use std::fs;
-
 pub fn run_intcodes(arg1: u32, arg2: u32) -> u32 {
-    let content = fs::read_to_string("./src/day2/input").expect("reading file went wrong!");
+    let content = crate::utils::readFile("./src/day2/input");
     let mut arr: Vec<u32> = content.split(",").map(|str_int| str_int.parse::<u32>().unwrap()).collect();
     arr[1] = arg1;
     arr[2] = arg2;

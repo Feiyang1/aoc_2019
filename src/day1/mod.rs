@@ -1,8 +1,7 @@
-use std::fs;
 
 pub fn calc() {
     // PART 1
-    let contents = fs::read_to_string("src/day1/input").expect("reading file went wrong!");
+    let contents = crate::utils::readFile("src/day1/input");
     let total_fuel: i32 = contents
         .split("\r\n")
         .map(|line| line.parse::<i32>().unwrap())
