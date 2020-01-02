@@ -1,6 +1,7 @@
 mod day1;
 mod day2;
 mod day3;
+mod day4;
 mod utils;
 
 fn main() {
@@ -11,5 +12,7 @@ fn main() {
     // day2::run_intcodes(12, 2);
     // day2::find_pair();
 
-    day3::find_nearest();
+    // day3::find_nearest();
+
+    day4::count_possible_numbers();
 }
