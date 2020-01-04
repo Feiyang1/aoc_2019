@@ -2,6 +2,7 @@ mod day1;
 mod day2;
 mod day3;
 mod day4;
+mod day5;
 mod utils;
 
 fn main() {
@@ -14,5 +15,7 @@ fn main() {
 
     // day3::find_nearest();
 
-    day4::count_possible_numbers();
+    // day4::count_possible_numbers();
+
+    day5::run_intcode();
 }

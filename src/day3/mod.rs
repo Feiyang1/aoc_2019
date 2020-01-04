@@ -1,7 +1,7 @@
 use std::fmt;
 
 pub fn find_nearest() -> i32 {
-    let content = crate::utils::readFile("./src/day3/input");
+    let content = crate::utils::read_file("./src/day3/input");
     let path_arrays: Vec<&str> = content.split("\r\n").collect();
 
     let path1: Vec<&str> = path_arrays[0].split(",").collect();
