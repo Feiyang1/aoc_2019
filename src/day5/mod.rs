@@ -39,14 +39,14 @@ impl Op {
                 let p1 = self.params[0].as_ref().unwrap().get_value(memory);
                 let p2 = self.params[1].as_ref().unwrap().get_value(memory);
                 let p3 = self.params[2].as_ref().unwrap().value;
-
+                println!("{} + {} = {} to pos {}", p1, p2, p1 + p2, p3);
                 memory[p3 as usize] = p1 + p2;
             },
             Instruction::Multiply => {
                 let p1 = self.params[0].as_ref().unwrap().get_value(memory);
                 let p2 = self.params[1].as_ref().unwrap().get_value(memory);
                 let p3 = self.params[2].as_ref().unwrap().value;
-
+                println!("{} * {} = {} to pos {}", p1, p2, p1 * p2, p3);
                 memory[p3 as usize] = p1*p2;
             },
             Instruction::Input(i) => {
@@ -67,12 +67,13 @@ impl Op {
                 };
 
                 let p1 = self.params[0].as_ref().unwrap().value;
+                println!("saving {} to pos {}", input, p1);
 
                 memory[p1 as usize] = input;
             },
             Instruction::Output => {
                 let p1 = self.params[0].as_ref().unwrap().get_value(memory);
-                println!("The output is {}", p1);
+                println!("The output is {} at pos {}", p1, self.params[0].as_ref().unwrap().value);
                 return Some(Result::Output(p1));
             },
             Instruction::JumpTrue => {
@@ -156,6 +157,8 @@ pub fn run_intcode(code_path: &str, inputs: Vec<i32>) -> i32 {
         .collect();
     let mut cur = 0;
     let mut last_output = -1;
+    let mut input_count = 0;
+    
     while codes[cur] != 99 {
         let code = format!("{}", codes[cur]);
 
@@ -174,7 +177,7 @@ pub fn run_intcode(code_path: &str, inputs: Vec<i32>) -> i32 {
 
 
         let mut op_len = 0;
-        let mut input_count = 0;
+        
 
         op.instruction = match op_code {
             "01" => {
@@ -188,7 +191,10 @@ pub fn run_intcode(code_path: &str, inputs: Vec<i32>) -> i32 {
             "03" => {
                 op_len = 2;
                 if input_count < inputs.len() {
-                    Instruction::Input(Some(inputs[input_count]))
+                    let input = inputs[input_count];
+                    input_count += 1;
+                    println!("the input is {}", input);
+                    Instruction::Input(Some(input))
                 } else {
                     Instruction::Input(None)
                 }
@@ -248,7 +254,7 @@ pub fn run_intcode(code_path: &str, inputs: Vec<i32>) -> i32 {
             i += 1;
         }
 
-       // println!("running op {} {} at {}", op, code, cur);
+        println!("running op {} {} at {}", op, code, cur);
 
         let result = op.run(&mut codes);
 
@@ -265,7 +271,7 @@ pub fn run_intcode(code_path: &str, inputs: Vec<i32>) -> i32 {
             None => cur += op_len
         };
 
-       // println!("next code at {}", cur);
+        println!("next code at {}", cur);
     }
 
     return last_output;
