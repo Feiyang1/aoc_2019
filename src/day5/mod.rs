@@ -2,7 +2,7 @@ use std::io;
 use std::fmt;
 
 struct Op {
-    instruction: Instruction,
+instruction: Instruction,
     params: [Option<Parameter>; 3],
 }
 
@@ -27,8 +27,9 @@ enum Instruction {
     Equal
 }
 
-struct Result {
-    jump_to: i32
+enum Result {
+    Jump(i32),
+    Output(i32)
 }
 
 impl Op {
@@ -65,13 +66,14 @@ impl Op {
             Instruction::Output => {
                 let p1 = self.params[0].as_ref().unwrap().get_value(memory);
                 println!("The output is {}", p1);
+                return Some(Result::Output(p1));
             },
             Instruction::JumpTrue => {
                 let p1 = self.params[0].as_ref().unwrap().get_value(memory);
 
                 if p1 > 0 {
                     let p2 = self.params[1].as_ref().unwrap().get_value(memory);
-                    return Some(Result { jump_to: p2});
+                    return Some(Result::Jump(p2));
                 }
             },
             Instruction::JumpFalse => {
@@ -79,7 +81,7 @@ impl Op {
 
                 if p1 == 0 {
                     let p2 = self.params[1].as_ref().unwrap().get_value(memory);
-                    return Some(Result { jump_to: p2});
+                    return Some(Result::Jump(p2));
                 }
             },
             Instruction::LessThan => {
@@ -139,14 +141,14 @@ impl Parameter {
     }
 }
 
-pub fn run_intcode() {
-    let content = crate::utils::read_file("./src/day5/input");
+pub fn run_intcode(code_path: &str) -> i32 {
+    let content = crate::utils::read_file(code_path);
     let mut codes: Vec<i32> = content
         .split(",")
         .map(|str_int| str_int.parse::<i32>().unwrap())
         .collect();
     let mut cur = 0;
-
+    let mut last_output = -1;
     while codes[cur] != 99 {
         let code = format!("{}", codes[cur]);
 
@@ -208,7 +210,7 @@ pub fn run_intcode() {
             let pos: i32 = code_len as i32 - 3 - i as i32;
             op.params[i] = if pos >= 0 {
                 let mode = &code[pos as usize..pos as usize + 1];
-                println!("parameter {} {}", mode, codes[cur + 1 + i]);
+               // println!("parameter {} {}", mode, codes[cur + 1 + i]);
 
                 if mode == "0" {
                     Some(Parameter {
@@ -222,7 +224,7 @@ pub fn run_intcode() {
                     })
                 }
             } else {
-                println!("parameter {} {}", "00", codes[cur + 1 + i]);
+              //  println!("parameter {} {}", "00", codes[cur + 1 + i]);
                 Some(Parameter {
                     mode: ParameterMode::Position,
                     value: codes[cur + 1 + i],
@@ -234,15 +236,25 @@ pub fn run_intcode() {
             i += 1;
         }
 
-        println!("running op {} {} at {}", op, code, cur);
+       // println!("running op {} {} at {}", op, code, cur);
 
         let result = op.run(&mut codes);
 
         match result {
-            Some(r) => cur = r.jump_to as usize,
+            Some(r) => {
+                match r {
+                    Result::Jump(j) => cur = j as usize,
+                    Result::Output(o) => {
+                        last_output = o;
+                        cur += op_len;
+                    }
+                }
+            },
             None => cur += op_len
         };
 
-        println!("next code at {}", cur);
+       // println!("next code at {}", cur);
     }
+
+    return last_output;
 }
