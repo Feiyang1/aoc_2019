@@ -2,7 +2,7 @@ use std::io;
 use std::fmt;
 
 struct Op {
-instruction: Instruction,
+    instruction: Instruction,
     params: [Option<Parameter>; 3],
 }
 
@@ -19,7 +19,7 @@ enum ParameterMode {
 enum Instruction {
     Add,
     Multiply,
-    Input,
+    Input(Option<i32>),
     Output,
     JumpTrue,
     JumpFalse,
@@ -49,14 +49,21 @@ impl Op {
 
                 memory[p3 as usize] = p1*p2;
             },
-            Instruction::Input => {
-                let mut input = String::new();
-                println!("please enter a code");
-                io::stdin().read_line(&mut input).expect("Falied to read line");
-        
-                let input: i32 = match input.trim().parse() {
-                    Ok(num) => num,
-                    Err(_) => panic!(format!("{} is not a number", input))
+            Instruction::Input(i) => {
+
+
+                let input = match i {
+                    Some(val) => val,
+                    None => {
+                        let mut input = String::new();
+                        println!("please enter a code");
+                        io::stdin().read_line(&mut input).expect("Falied to read line");
+                
+                        match input.trim().parse() {
+                            Ok(num) => num,
+                            Err(_) => panic!(format!("{} is not a number", input))
+                        }
+                    }
                 };
 
                 let p1 = self.params[0].as_ref().unwrap().value;
@@ -109,7 +116,7 @@ impl fmt::Display for Op {
         let op = match self.instruction {
             Instruction::Add => "Add",
             Instruction::Multiply => "Multiply",
-            Instruction::Input => "Input",
+            Instruction::Input(_) => "Input",
             Instruction::Output => "Output",
             Instruction::JumpFalse => "JumpFalse",
             Instruction::JumpTrue => "JumpTrue",
@@ -141,7 +148,7 @@ impl Parameter {
     }
 }
 
-pub fn run_intcode(code_path: &str) -> i32 {
+pub fn run_intcode(code_path: &str, inputs: Vec<i32>) -> i32 {
     let content = crate::utils::read_file(code_path);
     let mut codes: Vec<i32> = content
         .split(",")
@@ -167,6 +174,7 @@ pub fn run_intcode(code_path: &str) -> i32 {
 
 
         let mut op_len = 0;
+        let mut input_count = 0;
 
         op.instruction = match op_code {
             "01" => {
@@ -179,7 +187,11 @@ pub fn run_intcode(code_path: &str) -> i32 {
             }
             "03" => {
                 op_len = 2;
-                Instruction::Input
+                if input_count < inputs.len() {
+                    Instruction::Input(Some(inputs[input_count]))
+                } else {
+                    Instruction::Input(None)
+                }
             }
             "04" => {
                 op_len = 2;
