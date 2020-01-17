@@ -149,16 +149,16 @@ impl Parameter {
     }
 }
 
-pub fn run_intcode(code_path: &str, inputs: Vec<i32>) -> i32 {
-    let content = crate::utils::read_file(code_path);
-    let mut codes: Vec<i32> = content
-        .split(",")
-        .map(|str_int| str_int.parse::<i32>().unwrap())
-        .collect();
-    let mut cur = 0;
+pub struct IntcodeResult {
+    pub output: Option<i32>,
+    pub resume_point: Option<usize>
+}
+
+pub fn run_intcode_raw(codes: &mut Vec<i32>, inputs: Vec<i32>, resume_point: usize, stop_on_pending_input: bool) -> IntcodeResult {
+    let mut cur = resume_point;
     let mut last_output = -1;
     let mut input_count = 0;
-    
+
     while codes[cur] != 99 {
         let code = format!("{}", codes[cur]);
 
@@ -196,7 +196,15 @@ pub fn run_intcode(code_path: &str, inputs: Vec<i32>) -> i32 {
                     println!("the input is {}", input);
                     Instruction::Input(Some(input))
                 } else {
-                    Instruction::Input(None)
+                    // stop the program on pending input and return the resume pointer
+                    if stop_on_pending_input {
+                        return IntcodeResult {
+                            output: Some(last_output),
+                            resume_point: Some(cur)
+                        };
+                    } else {
+                        Instruction::Input(None)
+                    }
                 }
             }
             "04" => {
@@ -255,8 +263,7 @@ pub fn run_intcode(code_path: &str, inputs: Vec<i32>) -> i32 {
         }
 
         println!("running op {} {} at {}", op, code, cur);
-
-        let result = op.run(&mut codes);
+        let result = op.run(codes);
 
         match result {
             Some(r) => {
@@ -274,5 +281,19 @@ pub fn run_intcode(code_path: &str, inputs: Vec<i32>) -> i32 {
         println!("next code at {}", cur);
     }
 
-    return last_output;
+    return IntcodeResult {
+        output: Some(last_output),
+        resume_point: None
+    };
+}
+
+pub fn run_intcode(code_path: &str, inputs: Vec<i32>) -> i32 {
+    let content = crate::utils::read_file(code_path);
+    let mut codes: Vec<i32> = content
+        .split(",")
+        .map(|str_int| str_int.parse::<i32>().unwrap())
+        .collect();
+    
+    let result = run_intcode_raw(&mut codes, inputs, 0, false);
+    return result.output.unwrap();
 }

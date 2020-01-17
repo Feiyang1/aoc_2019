@@ -36,3 +36,102 @@ fn recurse(phase_setting_left: Vec<i32>, input: i32) -> (i32, String) {
     
     return (max, max_seq);
 }
+
+pub fn max_thrust_repeat() {
+    // crate::day5::run_intcode("./src/day7/input", vec![]);
+     println!("max thrust is {}", recurse_and_execute(vec![], (5..10).collect()));
+}
+
+fn recurse_and_execute(permutation: Vec<i32>, phase_setting_left: Vec<i32>) -> i32 {
+    if phase_setting_left.len() > 0 {
+        let mut max = -10000;
+        for ps in phase_setting_left.iter() {
+            let mut permu = permutation.clone();
+            permu.push(*ps);
+            let copy = phase_setting_left.clone();
+            let phase_setting_left_next: Vec<i32> = copy.into_iter().filter(|v| v != ps).collect();
+            let result = recurse_and_execute(permu, phase_setting_left_next);
+
+            if result > max {
+                max = result;
+            }
+        }
+
+        return max;
+    } else { // execute amplifiers in loop
+        let content = crate::utils::read_file("./src/day7/input");
+        let a_codes: Vec<i32> = content
+            .split(",")
+            .map(|str_int| str_int.parse::<i32>().unwrap())
+            .collect();
+
+        let b_codes = a_codes.clone();
+        let c_codes = a_codes.clone();
+        let d_codes = a_codes.clone();
+        let e_codes = a_codes.clone();
+    
+        let mut amplifiers = vec![a_codes, b_codes, c_codes, d_codes, e_codes];
+        let mut amplifers_last_result: Vec<crate::day5::IntcodeResult> = vec![];
+
+        for _ in (0..5) {
+            amplifers_last_result.push(crate::day5::IntcodeResult{output: None, resume_point: None});
+        }
+
+        let mut running_amp_idx = 0;
+        let mut init_done = false;
+        loop {
+            let amplifier = &mut amplifiers[running_amp_idx];
+         //   println!("got amplifier {}", running_amp_idx);
+            let mut input = vec![];
+            let mut resume_point = 0;
+            if !init_done {
+                input.push(permutation[running_amp_idx]);
+
+                // input for the first amplifier
+                if running_amp_idx == 0 {
+                    input.push(0);
+                } else {
+                    let mut input_from: i32 = running_amp_idx as i32 - 1;
+                    if input_from < 0 {
+                        input_from = 4; // the last amplifier feeds to the first amplifier
+                    }
+                    input.push(amplifers_last_result[input_from as usize].output.unwrap())
+                }
+            } else {
+           //     println!("looking for resume point {}", amplifers_last_result[running_amp_idx].resume_point.unwrap());
+                resume_point = match amplifers_last_result[running_amp_idx].resume_point {
+                   Some(p) => p,
+                   None => {
+            //        println!("is this the end?");
+            //        println!("The max thrust is {}", amplifers_last_result[4].output.unwrap());
+                    return amplifers_last_result[4].output.unwrap();
+                   }
+               };
+
+               let mut input_from: i32 = running_amp_idx as i32 - 1;
+               if input_from < 0 {
+                    input_from = 4; // the last amplifier feeds to the first amplifier
+                }
+                input.push(amplifers_last_result[input_from as usize].output.unwrap())
+            }
+
+            println!("running amplifier {} with", running_amp_idx);
+            let result = crate::day5::run_intcode_raw(amplifier, input, resume_point, true);
+        //    println!("amplifier {} outputs {}", running_amp_idx, result.output.unwrap());
+
+            match result.resume_point {
+                Some(i) => {println!("resume point found for {}", running_amp_idx)},
+                None => {println!("no more resume point, program halts {}!", running_amp_idx)}
+            }
+            amplifers_last_result[running_amp_idx] = result;
+
+            running_amp_idx = (running_amp_idx + 1) % 5;
+            if running_amp_idx == 0 && !init_done {
+                init_done = true;
+            }
+
+        //    println!("this ends here {}", running_amp_idx);
+        }
+        
+    }
+}

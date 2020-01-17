@@ -24,6 +24,7 @@ fn main() {
     // day6::count_orbit();
     // day6::steps_to_santa();
 
-    day7::max_thrust();
+    // day7::max_thrust();
+    day7::max_thrust_repeat();
 
 }
