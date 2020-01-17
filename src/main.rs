@@ -5,6 +5,7 @@ mod day4;
 mod day5;
 mod day6;
 mod day7;
+mod day8;
 mod utils;
 
 fn main() {
@@ -25,6 +26,8 @@ fn main() {
     // day6::steps_to_santa();
 
     // day7::max_thrust();
-    day7::max_thrust_repeat();
+    // day7::max_thrust_repeat();
+
+    day8::checksum();
 
 }
