@@ -28,6 +28,7 @@ fn main() {
     // day7::max_thrust();
     // day7::max_thrust_repeat();
 
-    day8::checksum();
+    // day8::checksum();
+    day8::decode();
 
 }
