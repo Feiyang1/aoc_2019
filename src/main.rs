@@ -6,6 +6,7 @@ mod day5;
 mod day6;
 mod day7;
 mod day8;
+mod day9;
 mod utils;
 
 fn main() {
@@ -29,6 +30,7 @@ fn main() {
     // day7::max_thrust_repeat();
 
     // day8::checksum();
-    day8::decode();
+    // day8::decode();
 
+    day9::boost();
 }

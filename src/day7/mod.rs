@@ -4,7 +4,7 @@ pub fn max_thrust() {
    println!("the max thrust possible is {}, seq: {}", max_thrust, max_seq);
 }
 
-fn recurse(phase_setting_left: Vec<i32>, input: i32) -> (i32, String) {
+fn recurse(phase_setting_left: Vec<i128>, input: i128) -> (i128, String) {
     // println!("level {}, input {}", phase_setting_left.len(), input);
     let mut max = -1000000;
     let mut max_seq = format!("");
@@ -18,7 +18,7 @@ fn recurse(phase_setting_left: Vec<i32>, input: i32) -> (i32, String) {
             }
         } else {
             let copy = phase_setting_left.clone();
-            let phase_setting_left_next: Vec<i32> = copy.into_iter().filter(|v| v != ps).collect();
+            let phase_setting_left_next: Vec<i128> = copy.into_iter().filter(|v| v != ps).collect();
 
             if phase_setting_left.len() == 5 {
                 println!("using ps {}, output {}, left {}", ps, out, format!("{}, {}, {}, {}", phase_setting_left_next[0], phase_setting_left_next[1], phase_setting_left_next[2], phase_setting_left_next[3]));
@@ -42,14 +42,14 @@ pub fn max_thrust_repeat() {
      println!("max thrust is {}", recurse_and_execute(vec![], (5..10).collect()));
 }
 
-fn recurse_and_execute(permutation: Vec<i32>, phase_setting_left: Vec<i32>) -> i32 {
+fn recurse_and_execute(permutation: Vec<i128>, phase_setting_left: Vec<i128>) -> i128 {
     if phase_setting_left.len() > 0 {
         let mut max = -10000;
         for ps in phase_setting_left.iter() {
             let mut permu = permutation.clone();
             permu.push(*ps);
             let copy = phase_setting_left.clone();
-            let phase_setting_left_next: Vec<i32> = copy.into_iter().filter(|v| v != ps).collect();
+            let phase_setting_left_next: Vec<i128> = copy.into_iter().filter(|v| v != ps).collect();
             let result = recurse_and_execute(permu, phase_setting_left_next);
 
             if result > max {
@@ -60,9 +60,9 @@ fn recurse_and_execute(permutation: Vec<i32>, phase_setting_left: Vec<i32>) -> i
         return max;
     } else { // execute amplifiers in loop
         let content = crate::utils::read_file("./src/day7/input");
-        let a_codes: Vec<i32> = content
+        let a_codes: Vec<i128> = content
             .split(",")
-            .map(|str_int| str_int.parse::<i32>().unwrap())
+            .map(|str_int| str_int.parse::<i128>().unwrap())
             .collect();
 
         let b_codes = a_codes.clone();
@@ -91,7 +91,7 @@ fn recurse_and_execute(permutation: Vec<i32>, phase_setting_left: Vec<i32>) -> i
                 if running_amp_idx == 0 {
                     input.push(0);
                 } else {
-                    let mut input_from: i32 = running_amp_idx as i32 - 1;
+                    let mut input_from: i128 = running_amp_idx as i128 - 1;
                     if input_from < 0 {
                         input_from = 4; // the last amplifier feeds to the first amplifier
                     }
@@ -108,7 +108,7 @@ fn recurse_and_execute(permutation: Vec<i32>, phase_setting_left: Vec<i32>) -> i
                    }
                };
 
-               let mut input_from: i32 = running_amp_idx as i32 - 1;
+               let mut input_from: i128 = running_amp_idx as i128 - 1;
                if input_from < 0 {
                     input_from = 4; // the last amplifier feeds to the first amplifier
                 }
@@ -116,7 +116,7 @@ fn recurse_and_execute(permutation: Vec<i32>, phase_setting_left: Vec<i32>) -> i
             }
 
             println!("running amplifier {} with", running_amp_idx);
-            let result = crate::day5::run_intcode_raw(amplifier, input, resume_point, true);
+            let result = crate::day5::run_intcode_raw(amplifier, None, input, resume_point, true, 0);
         //    println!("amplifier {} outputs {}", running_amp_idx, result.output.unwrap());
 
             match result.resume_point {

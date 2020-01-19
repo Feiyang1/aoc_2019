@@ -1,5 +1,6 @@
 use std::io;
 use std::fmt;
+use std::collections::HashMap;
 
 struct Op {
     instruction: Instruction,
@@ -7,47 +8,55 @@ struct Op {
 }
 
 struct Parameter {
-    value: i32,
+    value: i128,
     mode: ParameterMode,
 }
 
 enum ParameterMode {
     Position,
     Immediate,
+    Relative(i128) // relative base value
 }
 
 enum Instruction {
     Add,
     Multiply,
-    Input(Option<i32>),
+    Input(Option<i128>),
     Output,
     JumpTrue,
     JumpFalse,
     LessThan,
-    Equal
+    Equal,
+    UpdateRelativeBase
 }
 
 enum Result {
-    Jump(i32),
-    Output(i32)
+    Jump(i128),
+    Output(i128)
 }
 
 impl Op {
-    fn run(&self, memory: &mut Vec<i32>) -> Option<Result> {
+    fn run(&self, codes: &mut Vec<i128>, mem: &mut HashMap<i128, i128>, relative_base: &mut i128) -> Option<Result> {
+
         match self.instruction {
             Instruction::Add => {
-                let p1 = self.params[0].as_ref().unwrap().get_value(memory);
-                let p2 = self.params[1].as_ref().unwrap().get_value(memory);
-                let p3 = self.params[2].as_ref().unwrap().value;
-                println!("{} + {} = {} to pos {}", p1, p2, p1 + p2, p3);
-                memory[p3 as usize] = p1 + p2;
+                let p1 = self.params[0].as_ref().unwrap().get_value(codes, mem);
+                let p2 = self.params[1].as_ref().unwrap().get_value(codes, mem);
+                let p3 = self.params[2].as_ref().unwrap().get_addr(codes);
+
+                let val = p1 + p2;
+                // println!("{} + {} = {} to pos {}", p1, p2, val, p3);
+
+                insert_val(codes, mem, p3, val);
             },
             Instruction::Multiply => {
-                let p1 = self.params[0].as_ref().unwrap().get_value(memory);
-                let p2 = self.params[1].as_ref().unwrap().get_value(memory);
-                let p3 = self.params[2].as_ref().unwrap().value;
-                println!("{} * {} = {} to pos {}", p1, p2, p1 * p2, p3);
-                memory[p3 as usize] = p1*p2;
+                let p1 = self.params[0].as_ref().unwrap().get_value(codes, mem);
+                let p2 = self.params[1].as_ref().unwrap().get_value(codes, mem);
+                let p3 = self.params[2].as_ref().unwrap().get_addr(codes);
+
+                let val = p1*p2;
+                // println!("{} * {} = {} to pos {}", p1, p2, val, p3);
+                insert_val(codes, mem, p3, val);
             },
             Instruction::Input(i) => {
 
@@ -56,7 +65,7 @@ impl Op {
                     Some(val) => val,
                     None => {
                         let mut input = String::new();
-                        println!("please enter a code");
+                        // println!("please enter a code");
                         io::stdin().read_line(&mut input).expect("Falied to read line");
                 
                         match input.trim().parse() {
@@ -66,49 +75,66 @@ impl Op {
                     }
                 };
 
-                let p1 = self.params[0].as_ref().unwrap().value;
-                println!("saving {} to pos {}", input, p1);
+                let p1 = self.params[0].as_ref().unwrap().get_addr(codes);
+                // println!("saving {} to pos {}", input, p1);
 
-                memory[p1 as usize] = input;
+                insert_val(codes, mem, p1, input);
             },
             Instruction::Output => {
-                let p1 = self.params[0].as_ref().unwrap().get_value(memory);
-                println!("The output is {} at pos {}", p1, self.params[0].as_ref().unwrap().value);
+                let p1 = self.params[0].as_ref().unwrap().get_value(codes, mem);
+                println!("The output is {}", p1);
                 return Some(Result::Output(p1));
             },
             Instruction::JumpTrue => {
-                let p1 = self.params[0].as_ref().unwrap().get_value(memory);
+                let p1 = self.params[0].as_ref().unwrap().get_value(codes, mem);
 
                 if p1 > 0 {
-                    let p2 = self.params[1].as_ref().unwrap().get_value(memory);
+                    let p2 = self.params[1].as_ref().unwrap().get_value(codes, mem);
                     return Some(Result::Jump(p2));
                 }
             },
             Instruction::JumpFalse => {
-                let p1 = self.params[0].as_ref().unwrap().get_value(memory);
+                let p1 = self.params[0].as_ref().unwrap().get_value(codes, mem);
 
                 if p1 == 0 {
-                    let p2 = self.params[1].as_ref().unwrap().get_value(memory);
+                    let p2 = self.params[1].as_ref().unwrap().get_value(codes, mem);
                     return Some(Result::Jump(p2));
                 }
             },
             Instruction::LessThan => {
-                let p1 = self.params[0].as_ref().unwrap().get_value(memory);
-                let p2 = self.params[1].as_ref().unwrap().get_value(memory);
-                let p3 = self.params[2].as_ref().unwrap().value;
+                let p1 = self.params[0].as_ref().unwrap().get_value(codes, mem);
+                let p2 = self.params[1].as_ref().unwrap().get_value(codes, mem);
+                let p3 = self.params[2].as_ref().unwrap().get_addr(codes);
 
-                memory[p3 as usize] = if p1 < p2 { 1 } else { 0 };
+                let val = if p1 < p2 { 1 } else { 0 };
+
+                insert_val(codes, mem, p3, val);
             },
             Instruction::Equal => {
-                let p1 = self.params[0].as_ref().unwrap().get_value(memory);
-                let p2 = self.params[1].as_ref().unwrap().get_value(memory);
-                let p3 = self.params[2].as_ref().unwrap().value;
+                let p1 = self.params[0].as_ref().unwrap().get_value(codes, mem);
+                let p2 = self.params[1].as_ref().unwrap().get_value(codes, mem);
+                let p3 = self.params[2].as_ref().unwrap().get_addr(codes);
 
-                memory[p3 as usize] = if p1 == p2 { 1 } else { 0 };
+                let val = if p1 == p2 { 1 } else { 0 };
+                insert_val(codes, mem, p3, val);
+            }
+            Instruction::UpdateRelativeBase => {
+                let p1 = self.params[0].as_ref().unwrap().get_value(codes, mem);
+                *relative_base += p1;
             }
         };
 
         return None;
+    }
+}
+
+fn  insert_val(codes: &mut Vec<i128>, mem: &mut HashMap<i128, i128>, pos: i128, val: i128) {
+
+    let codes_len = codes.len() as i128;
+    if codes_len > pos {                    
+        codes[pos as usize] = val;
+    } else {
+        mem.insert(pos, val);
     }
 }
 
@@ -122,7 +148,8 @@ impl fmt::Display for Op {
             Instruction::JumpFalse => "JumpFalse",
             Instruction::JumpTrue => "JumpTrue",
             Instruction::LessThan => "LessThan",
-            Instruction::Equal => "Equal"
+            Instruction::Equal => "Equal",
+            Instruction::UpdateRelativeBase => "UpdateRelativeBase"
         };
 
         let p1 = match &self.params[0] {
@@ -135,29 +162,70 @@ impl fmt::Display for Op {
 }
 
 impl Parameter {
-    fn get_value(&self, memory: &Vec<i32>) -> i32 {
+    fn get_value(&self, codes: &Vec<i128>, mem: &HashMap<i128, i128>) -> i128 {
+        let codes_len = codes.len();
         match self.mode {
             ParameterMode::Immediate => {
-               // println!("getting Immediate value {}", self.value);
+                // println!("getting Immediate value {}", self.value);
                 self.value
             },
             ParameterMode::Position => {
-              //  println!("getting Position value {}", memory[self.value as usize]);
-                memory[self.value as usize]
+              if codes_len as i128 > self.value  {                
+                // println!("getting Position value {}", codes[self.value as usize]);
+                codes[self.value as usize]
+              } else {
+                match mem.get(&self.value) {
+                    Some(val) => {
+                        // println!("getting Position value {} in mem at addr {}", val, self.value);
+                        *val
+                    },
+                    None => {
+                        // println!("getting Position value {} in mem at addr {}", 0, self.value);
+                        0
+                    }
+                }
+              }
+                
+            },
+            ParameterMode::Relative(base) => {
+                let addr = self.value + base;
+                if codes_len as i128 > addr {
+                    // println!("getting Position value {}", codes[addr as usize]);
+                    codes[addr as usize]
+                } else {
+                    match mem.get(&addr) {
+                        Some(val) => *val,
+                        None => 0
+                    }
+                }
             }
+        }
+    }
+
+    fn get_addr(&self, codes: &Vec<i128>) -> i128 {
+        match self.mode {
+            ParameterMode::Immediate => panic!("addr can't be Immediate"),
+            ParameterMode::Position => self.value,
+            ParameterMode::Relative(base) => self.value + base 
         }
     }
 }
 
 pub struct IntcodeResult {
-    pub output: Option<i32>,
+    pub output: Option<i128>,
     pub resume_point: Option<usize>
 }
 
-pub fn run_intcode_raw(codes: &mut Vec<i32>, inputs: Vec<i32>, resume_point: usize, stop_on_pending_input: bool) -> IntcodeResult {
+pub fn run_intcode_raw(codes: &mut Vec<i128>, memory: Option<HashMap<i128, i128>>, inputs: Vec<i128>, resume_point: usize, stop_on_pending_input: bool, relative_base: i128) -> IntcodeResult {
     let mut cur = resume_point;
     let mut last_output = -1;
     let mut input_count = 0;
+    let mut relative_base = relative_base;
+
+    let mut memory = match memory {
+        Some(m) => m,
+        None => HashMap::new()
+    };
 
     while codes[cur] != 99 {
         let code = format!("{}", codes[cur]);
@@ -193,7 +261,7 @@ pub fn run_intcode_raw(codes: &mut Vec<i32>, inputs: Vec<i32>, resume_point: usi
                 if input_count < inputs.len() {
                     let input = inputs[input_count];
                     input_count += 1;
-                    println!("the input is {}", input);
+                    // println!("the input is {}", input);
                     Instruction::Input(Some(input))
                 } else {
                     // stop the program on pending input and return the resume pointer
@@ -227,13 +295,17 @@ pub fn run_intcode_raw(codes: &mut Vec<i32>, inputs: Vec<i32>, resume_point: usi
                 op_len = 4;
                 Instruction::Equal
             },
+            "09" => {
+                op_len = 2;
+                Instruction::UpdateRelativeBase
+            }
             _ => panic!(format!("unknown op code {}", op_code)),
         };
 
         // parameters
         let mut i: usize = 0;
         while i < op_len - 1 {
-            let pos: i32 = code_len as i32 - 3 - i as i32;
+            let pos: i128 = code_len as i128 - 3 - i as i128;
             op.params[i] = if pos >= 0 {
                 let mode = &code[pos as usize..pos as usize + 1];
                // println!("parameter {} {}", mode, codes[cur + 1 + i]);
@@ -243,14 +315,19 @@ pub fn run_intcode_raw(codes: &mut Vec<i32>, inputs: Vec<i32>, resume_point: usi
                         mode: ParameterMode::Position,
                         value: codes[cur + 1 + i],
                     })
-                } else {
+                } else if mode == "1" {
                    Some(Parameter {
                         mode: ParameterMode::Immediate,
                         value: codes[cur + 1 + i],
                     })
+                } else { // mode == "2"
+                    Some(Parameter {
+                        mode: ParameterMode::Relative(relative_base),
+                        value: codes[cur + 1 + i]
+                    })
                 }
             } else {
-              //  println!("parameter {} {}", "00", codes[cur + 1 + i]);
+              // println!("parameter {} {}", "00", codes[cur + 1 + i]);
                 Some(Parameter {
                     mode: ParameterMode::Position,
                     value: codes[cur + 1 + i],
@@ -263,7 +340,7 @@ pub fn run_intcode_raw(codes: &mut Vec<i32>, inputs: Vec<i32>, resume_point: usi
         }
 
         println!("running op {} {} at {}", op, code, cur);
-        let result = op.run(codes);
+        let result = op.run(codes, &mut memory, &mut relative_base);
 
         match result {
             Some(r) => {
@@ -278,7 +355,7 @@ pub fn run_intcode_raw(codes: &mut Vec<i32>, inputs: Vec<i32>, resume_point: usi
             None => cur += op_len
         };
 
-        println!("next code at {}", cur);
+        // println!("next code at {}", cur);
     }
 
     return IntcodeResult {
@@ -287,13 +364,13 @@ pub fn run_intcode_raw(codes: &mut Vec<i32>, inputs: Vec<i32>, resume_point: usi
     };
 }
 
-pub fn run_intcode(code_path: &str, inputs: Vec<i32>) -> i32 {
+pub fn run_intcode(code_path: &str, inputs: Vec<i128>) -> i128 {
     let content = crate::utils::read_file(code_path);
-    let mut codes: Vec<i32> = content
+    let mut codes: Vec<i128> = content
         .split(",")
-        .map(|str_int| str_int.parse::<i32>().unwrap())
+        .map(|str_int| str_int.parse::<i128>().unwrap())
         .collect();
     
-    let result = run_intcode_raw(&mut codes, inputs, 0, false);
+    let result = run_intcode_raw(&mut codes, None, inputs, 0, false, 0);
     return result.output.unwrap();
 }
