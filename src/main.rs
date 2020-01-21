@@ -8,6 +8,7 @@ mod day7;
 mod day8;
 mod day9;
 mod day10;
+mod day11;
 mod utils;
 
 fn main() {
@@ -27,7 +28,7 @@ fn main() {
     // day6::count_orbit();
     // day6::steps_to_santa();
 
-    // day7::max_thrust();
+    //  day7::max_thrust();
     // day7::max_thrust_repeat();
 
     // day8::checksum();
@@ -36,5 +37,7 @@ fn main() {
     // day9::boost();
 
     // day10::max_visibility();
-    day10::destroy();
+    // day10::destroy();
+
+    day11::estimate();
 }

@@ -213,12 +213,13 @@ impl Parameter {
 
 pub struct IntcodeResult {
     pub output: Option<i128>,
+    pub outputs_since_start_or_resume: Vec<i128>,
     pub resume_point: Option<usize>
 }
 
 pub fn run_intcode_raw(codes: &mut Vec<i128>, memory: Option<HashMap<i128, i128>>, inputs: Vec<i128>, resume_point: usize, stop_on_pending_input: bool, relative_base: i128) -> IntcodeResult {
     let mut cur = resume_point;
-    let mut last_output = -1;
+    let mut outputs = vec![];
     let mut input_count = 0;
     let mut relative_base = relative_base;
 
@@ -267,7 +268,8 @@ pub fn run_intcode_raw(codes: &mut Vec<i128>, memory: Option<HashMap<i128, i128>
                     // stop the program on pending input and return the resume pointer
                     if stop_on_pending_input {
                         return IntcodeResult {
-                            output: Some(last_output),
+                            output: if outputs.len() > 0 { Some(outputs[outputs.len() - 1]) } else { None },
+                            outputs_since_start_or_resume: outputs,
                             resume_point: Some(cur)
                         };
                     } else {
@@ -339,7 +341,7 @@ pub fn run_intcode_raw(codes: &mut Vec<i128>, memory: Option<HashMap<i128, i128>
             i += 1;
         }
 
-        println!("running op {} {} at {}", op, code, cur);
+       // println!("running op {} {} at {}", op, code, cur);
         let result = op.run(codes, &mut memory, &mut relative_base);
 
         match result {
@@ -347,7 +349,7 @@ pub fn run_intcode_raw(codes: &mut Vec<i128>, memory: Option<HashMap<i128, i128>
                 match r {
                     Result::Jump(j) => cur = j as usize,
                     Result::Output(o) => {
-                        last_output = o;
+                        outputs.push(o);
                         cur += op_len;
                     }
                 }
@@ -359,7 +361,8 @@ pub fn run_intcode_raw(codes: &mut Vec<i128>, memory: Option<HashMap<i128, i128>
     }
 
     return IntcodeResult {
-        output: Some(last_output),
+        output: if outputs.len() > 0 { Some(outputs[outputs.len() - 1]) } else { None },
+        outputs_since_start_or_resume: outputs,
         resume_point: None
     };
 }
