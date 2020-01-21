@@ -35,5 +35,6 @@ fn main() {
 
     // day9::boost();
 
-    day10::max_visibility();
+    // day10::max_visibility();
+    day10::destroy();
 }
