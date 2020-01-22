@@ -163,36 +163,37 @@ impl fmt::Display for Op {
 
 impl Parameter {
     fn get_value(&self, codes: &Vec<i128>, mem: &HashMap<i128, i128>) -> i128 {
+
         let codes_len = codes.len();
         match self.mode {
             ParameterMode::Immediate => {
-                // println!("getting Immediate value {}", self.value);
+              //   println!("getting Immediate value {}", self.value);
                 self.value
             },
             ParameterMode::Position => {
               if codes_len as i128 > self.value  {                
-                // println!("getting Position value {}", codes[self.value as usize]);
+             //   println!("getting Position value {}", codes[self.value as usize]);
                 codes[self.value as usize]
               } else {
                 match mem.get(&self.value) {
                     Some(val) => {
-                        // println!("getting Position value {} in mem at addr {}", val, self.value);
+                //         println!("getting Position value {} in mem at addr {}", val, self.value);
                         *val
                     },
                     None => {
-                        // println!("getting Position value {} in mem at addr {}", 0, self.value);
+                //         println!("getting Position value {} in mem at addr {}", 0, self.value);
                         0
                     }
                 }
               }
-                
             },
             ParameterMode::Relative(base) => {
                 let addr = self.value + base;
                 if codes_len as i128 > addr {
-                    // println!("getting Position value {}", codes[addr as usize]);
+                //    println!("getting Position value {}", codes[addr as usize]);
                     codes[addr as usize]
                 } else {
+                //    println!("getting position value from mem");
                     match mem.get(&addr) {
                         Some(val) => *val,
                         None => 0
@@ -214,18 +215,20 @@ impl Parameter {
 pub struct IntcodeResult {
     pub output: Option<i128>,
     pub outputs_since_start_or_resume: Vec<i128>,
-    pub resume_point: Option<usize>
+    pub resume_point: Option<usize>,
+    pub relative_base: i128
 }
 
-pub fn run_intcode_raw(codes: &mut Vec<i128>, memory: Option<HashMap<i128, i128>>, inputs: Vec<i128>, resume_point: usize, stop_on_pending_input: bool, relative_base: i128) -> IntcodeResult {
+pub fn run_intcode_raw(codes: &mut Vec<i128>, memory: Option<&mut HashMap<i128, i128>>, inputs: Vec<i128>, resume_point: usize, stop_on_pending_input: bool, relative_base: i128) -> IntcodeResult {
     let mut cur = resume_point;
     let mut outputs = vec![];
     let mut input_count = 0;
     let mut relative_base = relative_base;
 
+    let mut mm = HashMap::new();
     let mut memory = match memory {
         Some(m) => m,
-        None => HashMap::new()
+        None => &mut mm
     };
 
     while codes[cur] != 99 {
@@ -247,7 +250,6 @@ pub fn run_intcode_raw(codes: &mut Vec<i128>, memory: Option<HashMap<i128, i128>
 
         let mut op_len = 0;
         
-
         op.instruction = match op_code {
             "01" => {
                 op_len = 4;
@@ -270,7 +272,8 @@ pub fn run_intcode_raw(codes: &mut Vec<i128>, memory: Option<HashMap<i128, i128>
                         return IntcodeResult {
                             output: if outputs.len() > 0 { Some(outputs[outputs.len() - 1]) } else { None },
                             outputs_since_start_or_resume: outputs,
-                            resume_point: Some(cur)
+                            resume_point: Some(cur),
+                            relative_base
                         };
                     } else {
                         Instruction::Input(None)
@@ -341,7 +344,7 @@ pub fn run_intcode_raw(codes: &mut Vec<i128>, memory: Option<HashMap<i128, i128>
             i += 1;
         }
 
-       // println!("running op {} {} at {}", op, code, cur);
+        println!("running op {} {} at {}", op, code, cur);
         let result = op.run(codes, &mut memory, &mut relative_base);
 
         match result {
@@ -363,7 +366,8 @@ pub fn run_intcode_raw(codes: &mut Vec<i128>, memory: Option<HashMap<i128, i128>
     return IntcodeResult {
         output: if outputs.len() > 0 { Some(outputs[outputs.len() - 1]) } else { None },
         outputs_since_start_or_resume: outputs,
-        resume_point: None
+        resume_point: None,
+        relative_base
     };
 }
 

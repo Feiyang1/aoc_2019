@@ -39,5 +39,6 @@ fn main() {
     // day10::max_visibility();
     // day10::destroy();
 
-    day11::estimate();
+    // day11::estimate();
+    day11::paint();
 }

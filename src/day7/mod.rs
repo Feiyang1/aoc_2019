@@ -74,7 +74,7 @@ fn recurse_and_execute(permutation: Vec<i128>, phase_setting_left: Vec<i128>) ->
         let mut amplifers_last_result: Vec<crate::day5::IntcodeResult> = vec![];
 
         for _ in (0..5) {
-            amplifers_last_result.push(crate::day5::IntcodeResult{output: None, outputs_since_start_or_resume: vec![], resume_point: None});
+            amplifers_last_result.push(crate::day5::IntcodeResult{output: None, outputs_since_start_or_resume: vec![], resume_point: None, relative_base: 0});
         }
 
         let mut running_amp_idx = 0;
