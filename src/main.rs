@@ -10,6 +10,7 @@ mod day9;
 mod day10;
 mod day11;
 mod day12;
+mod day13;
 mod utils;
 
 fn main() {
@@ -43,5 +44,8 @@ fn main() {
     // day11::estimate();
     // day11::paint();
     
-    day12::total_energy();
+    // day12::total_energy();
+    // day12::steps_before_repeating();
+
+    day13::count_blocks();
 }
