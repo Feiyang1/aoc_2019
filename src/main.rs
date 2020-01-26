@@ -47,5 +47,6 @@ fn main() {
     // day12::total_energy();
     // day12::steps_before_repeating();
 
-    day13::count_blocks();
+    // day13::count_blocks();
+    day13::highscore();
 }

@@ -344,7 +344,7 @@ pub fn run_intcode_raw(codes: &mut Vec<i128>, memory: Option<&mut HashMap<i128, 
             i += 1;
         }
 
-        println!("running op {} {} at {}", op, code, cur);
+       // println!("running op {} {} at {}", op, code, cur);
         let result = op.run(codes, &mut memory, &mut relative_base);
 
         match result {
