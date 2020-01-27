@@ -11,6 +11,7 @@ mod day10;
 mod day11;
 mod day12;
 mod day13;
+mod day14;
 mod utils;
 
 fn main() {
@@ -48,5 +49,8 @@ fn main() {
     // day12::steps_before_repeating();
 
     // day13::count_blocks();
-    day13::highscore();
+    // day13::highscore();
+
+    // day14::cost_for_1_fuel();
+    day14::max_fuel();
 }
