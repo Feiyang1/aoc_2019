@@ -13,6 +13,7 @@ mod day12;
 mod day13;
 mod day14;
 mod day15;
+mod day16;
 mod utils;
 
 fn main() {
@@ -56,5 +57,7 @@ fn main() {
     // day14::max_fuel();
 
     // day15::shortest_path();
-    day15::fill_oxygen();
+    // day15::fill_oxygen();
+
+    day16::fft();
 }
