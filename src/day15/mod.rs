@@ -1,10 +1,51 @@
 use std::collections::{HashMap, HashSet};
 
 pub fn shortest_path() {
+    explore(&mut HashMap::new(), true);
+}
+
+pub fn fill_oxygen() {
+    let mut map: HashMap<String, u32> = HashMap::new();
+    let (x, y) = explore(&mut map, false);
+
+    let mut to_spread = vec![(x, y)];
+    let mut minutes = 0;
+    let mut spreaded: HashSet<String> = HashSet::new();
+
+    let dirs = vec![(0, 1), (1, 0), (0, -1), (-1, 0)];
+    while !to_spread.is_empty() {
+
+        let mut to_spread_next: Vec<(i128, i128)> = Vec::new();
+        for source in to_spread.iter() {
+            for dir in dirs.iter() {
+                let x = source.0 + dir.0;
+                let y = source.1 + dir.1;
+
+                if spreaded.contains(&key2((x, y))) {
+                    continue;
+                }
+
+                if let Some(t) = map.get(&key2((x, y))) {
+                    if *t == 1 { // space
+                        to_spread_next.push((x, y));
+                        spreaded.insert(key2((x, y)));
+                    }
+                }
+            }
+        }
+
+        minutes += 1;
+        to_spread = to_spread_next;
+    }
+
+    println!("spead to entire area in {} mins", minutes - 1);
+}
+
+fn explore(map: &mut HashMap<String, u32>, stop_on_oxygen_system: bool) -> (i128, i128) { // return x, y of the oxygen system
     let codes = crate::utils::read_intcodes("./src/day15/input");
 
     let mut steps = 0;
-    let mut found = false;
+    let mut oxygen_system_coordinate = (0,0);
 
     let mut save_points: Vec<SavePoint> = Vec::new();
     save_points.push(SavePoint {
@@ -16,11 +57,10 @@ pub fn shortest_path() {
         y: 0
     });
 
-    let mut visited: HashSet<String> = HashSet::new();
-    visited.insert(key(&save_points[0]));
+    map.insert(key(&save_points[0]), 1);
 
     let moves = vec!["N", "E", "S", "W"];
-    while !found {
+    while !save_points.is_empty() {
         let mut next_save_points: Vec<SavePoint> = Vec::new();
 
         for sp in save_points.iter() {
@@ -47,10 +87,8 @@ pub fn shortest_path() {
                     _ => panic!("invalid direction")
                 };
 
-                if visited.contains(&key(&new_sp)) { // skip if already visited
+                if map.contains_key(&key(&new_sp)) { // skip if already visited
                     continue;
-                } else {
-                    visited.insert(key(&new_sp));
                 }
 
                 let result = run_intcode_save_point(&mut new_sp, vec![input], true);
@@ -58,14 +96,22 @@ pub fn shortest_path() {
                 if let Some(output) = result.output {
                     match output {
                         0 => { // no op
+                            map.insert(key(&new_sp), 0);
                         },
-                        1 => { 
+                        1 => {
+                            map.insert(key(&new_sp), 1);
                             new_sp.resume_point = result.resume_point.unwrap();
                             new_sp.relative_base = result.relative_base;
                             next_save_points.push(new_sp);
                         },
                         2 => {
-                            found = true;
+                            map.insert(key(&new_sp), 2);
+                            oxygen_system_coordinate = (new_sp.x, new_sp.y);
+                            println!("found the oxygen system in {} steps", steps + 1);
+
+                            if stop_on_oxygen_system {
+                                return (new_sp.x, new_sp.y);
+                            }
                         },
                         _ => panic!("invalid output")
                     }
@@ -79,7 +125,9 @@ pub fn shortest_path() {
         save_points = next_save_points;
     }
 
-    println!("found the oxygen system in {} steps", steps);
+    println!("area mapped!");
+
+    return oxygen_system_coordinate;
 }
 
 #[derive(Clone)]
@@ -97,5 +145,9 @@ fn run_intcode_save_point(save_point: &mut SavePoint, inputs: Vec<i128>, stop_on
 }
 
 fn key(save_point: &SavePoint) -> String {
-    format!("{}-{}", save_point.x, save_point.y)
+    key2((save_point.x, save_point.y))
+}
+
+fn key2(point: (i128, i128)) -> String {
+    format!("{}-{}", point.0, point.1)
 }

@@ -55,5 +55,6 @@ fn main() {
     // day14::cost_for_1_fuel();
     // day14::max_fuel();
 
-    day15::shortest_path();
+    // day15::shortest_path();
+    day15::fill_oxygen();
 }
