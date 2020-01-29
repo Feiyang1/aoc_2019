@@ -59,5 +59,6 @@ fn main() {
     // day15::shortest_path();
     // day15::fill_oxygen();
 
-    day16::fft();
+    // day16::fft();
+    day16::repeat_10000_times();
 }
