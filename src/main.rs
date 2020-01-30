@@ -14,6 +14,7 @@ mod day13;
 mod day14;
 mod day15;
 mod day16;
+mod day17;
 mod utils;
 
 fn main() {
@@ -60,5 +61,7 @@ fn main() {
     // day15::fill_oxygen();
 
     // day16::fft();
-    day16::repeat_10000_times();
+    // day16::repeat_10000_times();
+
+    day17::calc_alignment();
 }
