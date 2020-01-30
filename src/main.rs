@@ -47,7 +47,7 @@ fn main() {
 
     // day11::estimate();
     // day11::paint();
-    
+
     // day12::total_energy();
     // day12::steps_before_repeating();
 
@@ -63,5 +63,6 @@ fn main() {
     // day16::fft();
     // day16::repeat_10000_times();
 
-    day17::calc_alignment();
+    // day17::calc_alignment();
+    day17::traverse();
 }
