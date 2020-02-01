@@ -15,6 +15,7 @@ mod day14;
 mod day15;
 mod day16;
 mod day17;
+mod day18;
 mod utils;
 
 fn main() {
@@ -64,5 +65,7 @@ fn main() {
     // day16::repeat_10000_times();
 
     // day17::calc_alignment();
-    day17::traverse();
+    // day17::traverse();
+
+    day18::shortest_path();
 }
