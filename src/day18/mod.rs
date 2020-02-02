@@ -1,8 +1,90 @@
 use std::collections::{HashMap, HashSet};
+use std::char;
+
+pub fn shortest_path_p2() {
+    let map = construct_map("./src/day18/input_p2");
+    let mut graph = construct_graph(&map);
+    let mut starting_points = vec!['@'; 4];
+
+    let mut cache = HashMap::<String, u32>::new();
+
+    let steps = shortest_path_recurse_p2(graph, starting_points, &mut cache);
+
+    println!("it takes least {} steps", steps);
+
+}
+
+fn shortest_path_recurse_p2(
+    mut graph: HashMap<char, HashMap<char, u32>>, 
+    at_keys: Vec<char>, 
+    cache: &mut HashMap<String, u32>
+) -> u32 {
+    // for key in graph.keys() {
+    //     print!("{}-", key);
+    // }
+    // println!();
+
+    if graph.len() == 4 {
+        println!("complete!");
+        return 0;
+    }
+    // println!("{} things left", graph.len());
+    let mut cache_key =  String::new();
+
+    for k in at_keys.iter() {
+        cache_key.push(*k);
+        cache_key.push('-');
+    }
+
+    let mut kk = graph.keys().map(|k| *k).collect::<Vec<char>>();
+    kk.sort();
+    for k in kk {
+        cache_key.push('-');
+        cache_key.push(k);
+    }
+
+    if let Some(res) = cache.get(&cache_key) {
+      //  println!("use cache {}", cache_key);
+        return *res;
+    }
+
+    let mut least_steps = 3000000000;
+    for (idx, _) in at_keys.iter().enumerate() {        
+        let mut temp = HashMap::<char, u32>::new();
+        let idx_char = char::from_digit(idx as u32, 10).unwrap();
+        let key_paths = graph.get(&idx_char).unwrap();
+        
+        for (to, distance) in key_paths.iter() {
+           
+            if *to as u32 >= 97 { // key
+                // println!("moving to {} {}", idx, to);
+                let mut graph_copy = graph.clone();
+                let mut at_keys_copy = at_keys.clone();
+                at_keys_copy[idx] = *to;
+
+                // update graph after moving
+                remove_from_graph(&mut graph_copy, idx_char);
+                let gate_key = (*to as u8 - 32) as char;
+                remove_from_graph(&mut graph_copy, gate_key);
+                // replace to with my position
+                replace_key_in_graph(&mut graph_copy, *to, idx_char);
+
+                let steps = shortest_path_recurse_p2(graph_copy, at_keys_copy, cache);
+              //  println!("steps is {}", steps);
+                if (steps + distance) < least_steps {
+                    least_steps = steps + distance;
+                }
+            }
+        }
+    }
+
+    cache.insert(cache_key, least_steps);
+    return least_steps;
+}
 
 pub fn shortest_path() {
 
-    let map = construct_map();
+    let map = construct_map("./src/day18/input");
 
     let mut graph = construct_graph(&map);
 
@@ -14,8 +96,8 @@ pub fn shortest_path() {
         }
     }
 
-    let entrance_neighbors = graph.remove(&'@').unwrap();
-    
+    let entrance_neighbors = graph.get(&'0').unwrap();
+
     let mut least_steps = 999999999;
 
     let mut cache = HashMap::<String, u32>::new();
@@ -54,7 +136,7 @@ fn shortest_path_recurse(mut graph: HashMap<char, HashMap<char, u32>>, at_key: c
     let gate_paths = remove_from_graph(&mut graph, gate_key);
     let key_paths = remove_from_graph(&mut graph, at_key);
 
-    if graph.len() == 0 {
+    if graph.len() == 1 { // the robot
         println!("complete!");
         return 0;
     }
@@ -74,7 +156,10 @@ fn shortest_path_recurse(mut graph: HashMap<char, HashMap<char, u32>>, at_key: c
     return least_steps;
 }
 
-fn remove_from_graph(graph: &mut HashMap<char, HashMap<char, u32>>, key: char) -> HashMap<char, u32> {
+fn remove_from_graph(
+    graph: &mut HashMap<char, HashMap<char, u32>>,
+    key: char
+) -> HashMap<char, u32> {
 
     if !graph.contains_key(&key) {
         println!("removing non existing key {}", key);
@@ -82,11 +167,11 @@ fn remove_from_graph(graph: &mut HashMap<char, HashMap<char, u32>>, key: char) -
     }
 
    // println!("removing {}", key);
-    let key_paths = graph.remove(&key).unwrap();
+    let key_paths = graph.remove(&key).expect("removing failed");
 
     for (k, _) in key_paths.iter() {
-     //   println!("....... {}", key);
-        let neighor = graph.get_mut(&k).unwrap();
+        // println!("....... {}", k);
+        let neighor = graph.get_mut(&k).expect("removing from neighbors failed");
         neighor.remove(&key);
     }
 
@@ -122,8 +207,24 @@ fn remove_from_graph(graph: &mut HashMap<char, HashMap<char, u32>>, key: char) -
     return key_paths;
 }
 
-fn construct_map() -> Vec<Vec<char>> {
-    let content = crate::utils::read_file("./src/day18/input");
+fn replace_key_in_graph (
+    graph: &mut HashMap<char, HashMap<char, u32>>,
+    from: char,
+    to: char
+) {
+    if let Some(from_map) = graph.remove(&from) {
+        for (k, v) in from_map.iter() {
+            if let Some(node) = graph.get_mut(k) {
+                node.remove(&from);
+                node.insert(to, *v);
+            }
+        }
+        graph.insert(to, from_map);
+    }
+}
+
+fn construct_map(path: &str) -> Vec<Vec<char>> {
+    let content = crate::utils::read_file(path);
 
     let height = content.split("\r\n").count();
     let width = content.split("\r\n").collect::<Vec<&str>>()[0].len();
@@ -131,9 +232,15 @@ fn construct_map() -> Vec<Vec<char>> {
 
     let mut map = vec![vec!['#'; width]; height];
 
+    let mut entrance_count: i32 = -1;
     for (row, line) in content.split("\r\n").enumerate() {
         for (col, c) in line.chars().enumerate() {
-            map[row][col] = c;
+            map[row][col] = if c == '@' {
+                entrance_count += 1;
+                char::from_digit(entrance_count as u32, 10).unwrap()
+            } else { 
+                c 
+            };
         }
     }
 
@@ -149,9 +256,23 @@ fn construct_map() -> Vec<Vec<char>> {
     return map;
 }
 
+fn find_entrances(map: &Vec<Vec<char>>) -> Vec<(usize, usize)> {
+    let mut entrances = Vec::new();
+    for (r_i, row) in map.iter().enumerate() {
+        for (c_i, c) in row.iter().enumerate() {
+            if let Some(digit) = c.to_digit(10) {
+                entrances.push((r_i, c_i));
+            }
+        }
+    }
+
+    return entrances;
+}
+
 fn construct_graph(map: &Vec<Vec<char>>) -> HashMap<char, HashMap<char, u32>> {
     let mut graph = HashMap::new();
 
+    let mut entrance_count: i32 = -1;
     for (r_i, row) in map.iter().enumerate() {
         for (c_i, c) in row.iter().enumerate() {
             if *c != '#' && *c != '.' {
@@ -170,8 +291,8 @@ fn add_neighbors(
     graph: &mut HashMap<char, HashMap<char, u32>>
 ) {
     let mut visited = HashSet::new();
+    visited.insert(format!("{}-{}", row, col));    
     let source_cr = map[row][col];
-    visited.insert(format!("{}-{}", row, col));
 
     let dirs = [(0, 1), (0, -1), (1, 0), (-1, 0)];
     let mut last = vec![(row as i32, col as i32)];
@@ -201,9 +322,8 @@ fn add_neighbors(
                 if !visited.contains(&key) {
 
                     visited.insert(key);
-                    
 
-                    if cr != '.' && cr != '@' { // either a gate or a key
+                    if cr != '.' { // either a gate, a key or a entrance/pos
                         if let Some(thing) = graph.get_mut(&source_cr) {
                 
                             if let Some(d) = thing.get(&cr) {

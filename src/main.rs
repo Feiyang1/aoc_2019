@@ -67,5 +67,6 @@ fn main() {
     // day17::calc_alignment();
     // day17::traverse();
 
-    day18::shortest_path();
+    // day18::shortest_path();
+     day18::shortest_path_p2();
 }
