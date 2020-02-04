@@ -16,6 +16,7 @@ mod day15;
 mod day16;
 mod day17;
 mod day18;
+mod day19;
 mod utils;
 
 fn main() {
@@ -68,5 +69,7 @@ fn main() {
     // day17::traverse();
 
     // day18::shortest_path();
-     day18::shortest_path_p2();
+    // day18::shortest_path_p2();
+
+    day19::count_areas();
 }
