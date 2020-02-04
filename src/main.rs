@@ -71,5 +71,6 @@ fn main() {
     // day18::shortest_path();
     // day18::shortest_path_p2();
 
-    day19::count_areas();
+    // day19::count_areas();
+    day19::fit_santa();
 }

@@ -82,7 +82,7 @@ impl Op {
             },
             Instruction::Output => {
                 let p1 = self.params[0].as_ref().unwrap().get_value(codes, mem);
-                println!("The output is {}", p1);
+               // println!("The output is {}", p1);
                 return Some(Result::Output(p1));
             },
             Instruction::JumpTrue => {
