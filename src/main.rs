@@ -17,6 +17,7 @@ mod day16;
 mod day17;
 mod day18;
 mod day19;
+mod day20;
 mod utils;
 
 fn main() {
@@ -72,5 +73,7 @@ fn main() {
     // day18::shortest_path_p2();
 
     // day19::count_areas();
-    day19::fit_santa();
+    // day19::fit_santa();
+
+    day20::shortest_path();
 }
