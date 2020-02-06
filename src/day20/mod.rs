@@ -1,17 +1,104 @@
 
 use std::collections::{HashMap, HashSet};
 
+pub fn shortest_path_recursive_maze() {
+    let map = construct_map();
+    let graph = construct_graph(&map);
+
+    let mut candidates = Vec::<RecursiveCost>::new();
+    candidates.push(RecursiveCost {
+        portal: String::from("AA"),
+        level: 0,
+        cost: 0
+    });
+ 
+    let mut included = HashSet::<String>::new();
+    while true {
+        candidates.sort_by(|a, b| a.cost.cmp(&b.cost));
+        let take = candidates.remove(0);
+        included.insert(format!("{}-{}", take.portal, take.level));
+         println!("taking {} at level {} cost {}", take.portal, take.level, take.cost);
+        if take.portal == "ZZ" && take.level == 0 {
+            println!("shortest path is {}", take.cost);
+            return;
+        }
+
+        let sister_portal_name = get_sister_portal_name(&take.portal);
+
+        if !graph.contains_key(&take.portal) {
+            continue;
+        }
+        
+        let neighbors = graph.get(&take.portal).unwrap();
+        for (k, v) in neighbors.iter() {   
+           // println!("attempting {}", k);
+            if take.level == 0 && k.len() == 2 
+            && *k != sister_portal_name
+            && *k != "ZZ" { // skip outer labels at level 0
+                continue;
+            }
+
+            if k == "AA-i" {
+                continue;
+            }
+
+            if take.level != 0 && (k == "AA" || k == "ZZ") { // skip AA and ZZ at deeper level
+                continue;
+            }
+
+            let k_level = if *k == sister_portal_name {
+            if k.len() == 2 {
+                take.level + 1
+            } else {
+                take.level - 1
+            }
+            } else {
+                take.level
+            };
+
+            let k_key = format!("{}-{}", k, k_level);
+            if included.contains(&k_key) {
+                continue;
+            }
+
+            let mut already_candidate = false;
+            for c in candidates.iter_mut() {
+                if c.portal == *k && c.level == k_level {
+                    already_candidate = true;
+                    if c.cost > take.cost + v {
+                        c.cost = take.cost + v;
+                    }
+                }
+            }
+
+            if !already_candidate {
+                candidates.push(RecursiveCost {
+                    portal: String::from(k),
+                    level: k_level,
+                    cost: take.cost + v
+                });
+            }
+        }
+    }
+}
+
+struct RecursiveCost {
+    portal: String,
+    level: u32,
+    cost: u32
+}
+
 pub fn shortest_path() {
    let map = construct_map();
    let graph = construct_graph(&map);
 
-   for (k,v) in graph.iter() {
-       println!("portal {}", k);
+//    for (k,v) in graph.iter() {
+//        println!("portal {}", k);
        
-       for (kk, vv) in v.iter() {
-            println!(" to {}, {}", kk, vv);
-       }
-   }
+//        for (kk, vv) in v.iter() {
+//             println!(" to {}, {}", kk, vv);
+//        }
+//    }
 
    let mut candidates = Vec::<Cost>::new();
    candidates.push(Cost {
@@ -19,10 +106,11 @@ pub fn shortest_path() {
        cost: 0
    });
 
-   let included = HashSet::<String>::new();
+   let mut included = HashSet::<String>::new();
    while true {
        candidates.sort_by(|a, b| a.cost.cmp(&b.cost));
        let take = candidates.remove(0);
+       included.insert(String::from(&take.portal));
         println!("taking {} cost {}", take.portal, take.cost);
        if take.portal == "ZZ" {
            println!("shortest path is {}", take.cost);
@@ -62,13 +150,12 @@ struct Cost {
 }
 
 fn construct_graph(map: & Vec<Vec<String>>) -> HashMap<String, HashMap<String, u32>> {
-    let mut visited_portal = HashMap::<String, String>::new();
     let mut graph = HashMap::new();
     for (r_idx, row) in map.iter().enumerate() {
         for (c_idx, item) in row.iter().enumerate() {
             if item.len() == 2 { // is portal
-                println!("portal {} {}", r_idx, c_idx);
-                add_neighbors(map, r_idx, c_idx, &mut graph, &mut visited_portal);
+             //   println!("portal {} {}", r_idx, c_idx);
+                add_neighbors(map, r_idx, c_idx, &mut graph);
             }
         }
     }
@@ -80,14 +167,12 @@ fn add_neighbors(
     map: & Vec<Vec<String>>, 
     r_idx: usize,
     c_idx: usize,
-    graph: &mut HashMap<String, HashMap<String, u32>>,
-    visited_portal: &mut HashMap::<String, String>
+    graph: &mut HashMap<String, HashMap<String, u32>>
 ) {
     let map_w = map[0].len();
     let map_h = map.len();
     let my_key = format!("{}-{}", r_idx, c_idx);
-    let raw_name = &map[r_idx][c_idx];
-    let my_name = get_portal_name(&raw_name, r_idx, c_idx, visited_portal);
+    let my_name = get_portal_name(map, r_idx, c_idx);
     let sister_portal_name = get_sister_portal_name(&my_name);
 
     let mut temp = HashMap::new();
@@ -115,7 +200,7 @@ fn add_neighbors(
         let mut to_explore_next = Vec::new();
 
         for (r, c) in to_explore.iter() {
-            println!("exploring {} {}", r, c);
+         //   println!("exploring {} {}", r, c);
             let thing = &map[*r][*c];
             visited.insert(format!("{}-{}", *r, *c));
 
@@ -132,7 +217,7 @@ fn add_neighbors(
                     }
                 }
             } else { // portal
-                let to_portal_name = get_portal_name(thing, *r, *c, visited_portal);
+                let to_portal_name = get_portal_name(map, *r, *c);
                 if let Some(v) = graph.get_mut(&my_name) {
                     if !v.contains_key(&to_portal_name) {
                         v.insert(to_portal_name, steps);
@@ -151,27 +236,33 @@ fn add_neighbors(
 }
 
 fn get_portal_name(
-    raw_name: &String, 
+    map: & Vec<Vec<String>>, 
     r_idx: usize,
-    c_idx: usize,
-    visited_portal: &mut HashMap::<String, String>
+    c_idx: usize
 ) -> String {
-    let my_key = format!("{}-{}", r_idx, c_idx);
-    if let Some(val) = visited_portal.get(raw_name) {
-        if my_key == *val {
-            String::from(raw_name)
-        } else {
-            format!("{}-1", raw_name)
-        }
+    let raw_name = &map[r_idx][c_idx];
+    if is_outer_portal(map, r_idx, c_idx) {
+        return String::from(raw_name);
     } else {
-        visited_portal.insert(String::from(raw_name), String::from(&my_key));
-        String::from(raw_name)
+        return format!("{}-i", raw_name);
     }
+}
+
+// hard coded
+fn is_outer_portal(
+    map: & Vec<Vec<String>>,
+    r_idx: usize,
+    c_idx: usize
+) -> bool {
+    let h = map.len();
+    let w = map[0].len();
+
+    r_idx == 2 || r_idx == h - 3 || c_idx == 2 || c_idx == w - 3  
 }
 
 fn get_sister_portal_name(portal_name: &String) -> String {
     if portal_name.len() == 2 {
-        return format!("{}-1", portal_name);
+        return format!("{}-i", portal_name);
     } else {
         return String::from(&portal_name[0..2]);
     }

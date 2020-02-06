@@ -75,5 +75,6 @@ fn main() {
     // day19::count_areas();
     // day19::fit_santa();
 
-    day20::shortest_path();
+    // day20::shortest_path();
+    day20::shortest_path_recursive_maze();
 }
