@@ -18,6 +18,7 @@ mod day17;
 mod day18;
 mod day19;
 mod day20;
+mod day21;
 mod utils;
 
 fn main() {
@@ -76,5 +77,8 @@ fn main() {
     // day19::fit_santa();
 
     // day20::shortest_path();
-    day20::shortest_path_recursive_maze();
+    // day20::shortest_path_recursive_maze();
+
+    // day21::pt1();
+    day21::pt2();
 }
