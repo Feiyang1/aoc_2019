@@ -344,7 +344,7 @@ pub fn run_intcode_raw(codes: &mut Vec<i128>, memory: Option<&mut HashMap<i128, 
             i += 1;
         }
 
-       // println!("running op {} {} at {}", op, code, cur);
+      // println!("running op {} {} at {}", op, code, cur);
         let result = op.run(codes, &mut memory, &mut relative_base);
 
         match result {
@@ -380,4 +380,15 @@ pub fn run_intcode(code_path: &str, inputs: Vec<i128>) -> i128 {
     
     let result = run_intcode_raw(&mut codes, None, inputs, 0, false, 0);
     return result.output.unwrap();
+}
+
+pub fn run_intcode_state(state: &mut IntcodeState, inputs: Vec<i128>, stop_on_pending_input: bool) -> IntcodeResult {
+    run_intcode_raw(&mut state.codes, Some(&mut state.mem), inputs, state.resume_point.unwrap(), stop_on_pending_input, state.relative_base)
+}
+
+pub struct IntcodeState {
+    pub codes: Vec<i128>,
+    pub resume_point: Option<usize>,
+    pub relative_base: i128,
+    pub mem: HashMap<i128, i128>
 }
