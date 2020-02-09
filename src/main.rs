@@ -87,5 +87,6 @@ fn main() {
     // day22::pt1();
     // day22::pt2(); // unresolved
 
-    day23::communicate();
+    // day23::communicate();
+    day23::monitor();
 }
