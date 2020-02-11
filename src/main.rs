@@ -21,6 +21,7 @@ mod day20;
 mod day21;
 mod day22;
 mod day23;
+mod day24;
 mod utils;
 
 fn main() {
@@ -88,5 +89,8 @@ fn main() {
     // day22::pt2(); // unresolved
 
     // day23::communicate();
-    day23::monitor();
+    // day23::monitor();
+
+    // day24::bug_score();
+    day24::recursive_bug_score();
 }
